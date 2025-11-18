@@ -6,9 +6,10 @@ import { login as setLoginState } from "@/stores/auth"
 const router = useRouter()
 const email = ref("test@mail.de")
 const password = ref("1234")
+const backendBaseUrl = import.meta.env.VITE_BACKEND_BASE_URL
 
 async function login() {
-  const res = await fetch("http://localhost:8080/api/login", {
+  const res = await fetch(`${backendBaseUrl}/api/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email: email.value, password: password.value })
