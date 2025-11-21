@@ -32,5 +32,13 @@ button {
   margin-left: 1rem;
   cursor: pointer;
 }
+nav a {
+  color: black !important;
+}
+
+nav a.router-link-active {
+  font-weight: bold;
+}
+
 
 </style>
