@@ -6,8 +6,14 @@
 
     <!-- Buttons -->
     <div class="button-group">
-      <button class="primary-btn">Anzeige erstellen</button>
-      <button class="secondary-btn">alle Anzeigen</button>
+      <button class="primary-btn" @click="$router.push('/create')">
+        Anzeige erstellen
+      </button>
+
+      <button class="secondary-btn" @click="$router.push('/ads')">
+        alle Anzeigen
+      </button>
+
     </div>
 
   </div>
