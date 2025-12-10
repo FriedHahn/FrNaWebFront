@@ -2,6 +2,7 @@
 import { ref } from "vue"
 import { useRouter } from "vue-router"
 import { login as setLoginState } from "@/stores/auth"
+import logo  from "@/assets/logo.png"
 
 const router = useRouter()
 const email = ref("test@mail.de")
@@ -34,11 +35,11 @@ async function login() {
     <div class="login-card">
       <div class="login-left">
         <div class="login-logo">
-          <span>FR</span>
+          <img src="@/assets/logo.png" alt="Logo" class="logo-image" />
         </div>
         <div class="login-headlines">
-          <h1>Login</h1>
-          <h2>Zugang zu deinem System</h2>
+          <h1>ShoeLive</h1>
+          <h2>Zugang zu deinem Profil</h2>
         </div>
         <p class="login-text">
           Melde dich an, um Zugriff auf dein Dashboard und deine Daten zu erhalten.
@@ -117,9 +118,9 @@ async function login() {
 }
 
 .login-logo {
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
+  width: 90px;
+  height: 90px;
+  border-radius: 24px;
   background: linear-gradient(135deg, #4f46e5, #7c3aed);
   display: flex;
   align-items: center;
@@ -225,4 +226,11 @@ async function login() {
   transform: translateY(-1px);
   box-shadow: 0 18px 40px rgba(79, 70, 229, 0.7);
 }
+
+.logo-image {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+}
+
 </style>
