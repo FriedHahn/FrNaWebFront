@@ -32,7 +32,6 @@ async function login() {
 <template>
   <div class="login-page">
     <div class="login-card">
-      <!-- Linke Seite: Text / Branding -->
       <div class="login-left">
         <div class="login-logo">
           <span>FR</span>
