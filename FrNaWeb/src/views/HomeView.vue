@@ -1,67 +1,91 @@
+<script setup lang="ts">
+import { RouterLink } from "vue-router"
+</script>
+
 <template>
-  <div class="landing-container">
+  <div class="home-page">
+    <div class="home-card">
+      <h1 class="home-title">ShoeLive</h1>
+      <p class="home-subtitle">Wähle, was du machen möchtest.</p>
 
-    <!-- Logo -->
-    <img src="@/assets/logo.png" alt="Logo" class="logo" />
+      <div class="home-actions">
+        <RouterLink :to="{ name: 'create-ad' }" class="home-box">
+          <h2>Anzeige erstellen</h2>
+          <p>Neue Schuhanzeige anlegen.</p>
+        </RouterLink>
 
-    <!-- Buttons -->
-    <div class="button-group">
-      <button class="primary-btn" @click="$router.push('/create')">
-        Anzeige erstellen
-      </button>
-
-      <button class="secondary-btn" @click="$router.push('/ads')">
-        alle Anzeigen
-      </button>
-
+        <RouterLink :to="{ name: 'ads' }" class="home-box">
+          <h2>Alle Anzeigen</h2>
+          <p>Alle gespeicherten Anzeigen ansehen.</p>
+        </RouterLink>
+      </div>
     </div>
-
   </div>
 </template>
 
-<script setup lang="ts">
-// aktuell brauchst du hier nichts
-</script>
-
-<style scoped>
-.landing-container {
-  height: 100vh;
+<style>
+.home-page {
+  min-height: 100vh;
+  padding: 40px;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed, #ec4899);
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
-  background: #ffffff; /* reines Weiß */
-
+  justify-content: center;
 }
 
-/* Logo */
-.logo {
-  width: 250px;
-  margin-bottom: 2rem;
-}
-
-/* Container für Buttons */
-.button-group {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 240px;
-}
-
-/* Button Basis-Styling */
-button {
-  padding: 0.8rem 1rem;
-  border-radius: 30px;
+.home-card {
+  max-width: 1100px;
   width: 100%;
-  font-size: 1rem;
-  cursor: pointer;
-  border: 2px solid black;
-  background: white;
-  transition: 0.25s;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 32px 40px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
 }
 
-/* Hover Effekte */
-button:hover {
-  background: #f2f2f2;
+.home-title {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.home-subtitle {
+  margin: 6px 0 24px;
+  color: #6b7280;
+}
+
+.home-actions {
+  display: flex;
+  gap: 24px;
+}
+
+.home-box {
+  flex: 1;
+  background: #f9fafb;
+  border-radius: 18px;
+  padding: 20px 24px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.home-box h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.home-box p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.home-box:hover {
+  transform: translateY(-2px);
+  background: #ffffff;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
 }
 </style>

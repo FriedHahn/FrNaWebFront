@@ -2,7 +2,6 @@
 import { ref } from "vue"
 import { useRouter } from "vue-router"
 import { login as setLoginState } from "@/stores/auth"
-import logo  from "@/assets/logo.png"
 
 const router = useRouter()
 const email = ref("test@mail.de")

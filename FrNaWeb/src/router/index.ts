@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import LoginView from "@/views/LoginView.vue";
+import LoginView from '@/views/LoginView.vue'
+import AllAdsView from '@/views/AllAdsView.vue'
+import CreateAdView from '@/views/CreateAdView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -11,33 +13,29 @@ const router = createRouter({
       component: LoginView,
     },
     {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
-    },
-    {
       path: '/home',
       name: 'home',
       component: HomeView,
     },
     {
-      path: '/create',
-      name: 'create',
-      component: () => import('../views/CreateAdView.vue')
+      path: '/ads',
+      name: 'ads',
+      component: AllAdsView,
     },
-
+    {
+      path: '/ads/new',
+      name: 'create-ad',
+      component: CreateAdView,
+    },
   ],
 })
 
 router.beforeEach((to, from, next) => {
   const isLoggedIn = !!localStorage.getItem('loggedIn')
   if (!isLoggedIn && to.name !== 'login') {
-    next({ name: 'login'})
+    next({ name: 'login' })
   } else if (isLoggedIn && to.name === 'login') {
-    next({ name: 'home'})
+    next({ name: 'home' })
   } else {
     next()
   }
