@@ -283,7 +283,7 @@ onBeforeUnmount(() => {
               <div class="content">
                 <h3 class="ad-title">{{ ad.brand }}</h3>
                 <span class="owner-pill">von {{ ad.ownerEmail }}</span>
-                <p class="line"><span>Groesse:</span> {{ ad.size }}</p>
+                <p class="line"><span>Größe:</span> {{ ad.size }}</p>
                 <p class="line"><span>Preis:</span> {{ ad.price }} €</p>
               </div>
 
