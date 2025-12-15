@@ -362,12 +362,11 @@ onBeforeUnmount(() => {
 <style scoped>
 .ads-page {
   min-height: 100vh;
+  height: auto;
   padding: 40px;
   box-sizing: border-box;
   background: linear-gradient(135deg, #4f46e5, #7c3aed, #ec4899);
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  display: block;
 }
 
 .ads-inner {
@@ -377,6 +376,7 @@ onBeforeUnmount(() => {
   border-radius: 24px;
   padding: 32px 40px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+  margin: 0 auto;
 }
 
 .ads-header {
