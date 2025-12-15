@@ -2,7 +2,7 @@
 import { ref, onMounted, onBeforeUnmount, computed } from "vue"
 import { RouterLink } from "vue-router"
 import { getAuthToken, getUserEmail } from "@/stores/auth"
-import { addToCart } from "@/stores/cart"
+import { addToCart, getCartItems } from "@/stores/cart"
 import KeinBild from "@/assets/KeinBild.png"
 
 type Ad = {
@@ -12,6 +12,8 @@ type Ad = {
   price: string
   ownerEmail: string
   imagePath?: string | null
+  sold?: boolean
+  buyerEmail?: string | null
 }
 
 const ads = ref<Ad[]>([])
@@ -39,51 +41,78 @@ function onEditImageChange(e: Event) {
   editImageFile.value = input?.files?.[0] ?? null
 }
 
-const myAds = computed(() => ads.value.filter(a => (a.ownerEmail || "").trim().toLowerCase() === myEmail.value))
-const otherAds = computed(() => ads.value.filter(a => (a.ownerEmail || "").trim().toLowerCase() !== myEmail.value))
+/* ---- Cart state (for disabling "Kaufen") ---- */
+const cartIds = computed(() => new Set(getCartItems().map(i => i.id)))
+function isInCart(adId: number) {
+  return cartIds.value.has(adId)
+}
+
+/* ---- Toast (bottom-right, with progress bar) ---- */
+type ToastKind = "success" | "info" | "error"
+const toastVisible = ref(false)
+const toastMessage = ref("")
+const toastKind = ref<ToastKind>("success")
+const toastProgress = ref(100)
+
+let toastRaf: number | null = null
+let toastTimeout: number | null = null
+
+function clearToastTimers() {
+  if (toastRaf !== null) {
+    cancelAnimationFrame(toastRaf)
+    toastRaf = null
+  }
+  if (toastTimeout !== null) {
+    window.clearTimeout(toastTimeout)
+    toastTimeout = null
+  }
+}
+
+function showToast(msg: string, kind: ToastKind = "success", durationMs = 6500) {
+  clearToastTimers()
+
+  toastMessage.value = msg
+  toastKind.value = kind
+  toastVisible.value = true
+  toastProgress.value = 100
+
+  const start = performance.now()
+  const tick = (now: number) => {
+    const elapsed = now - start
+    const left = Math.max(0, 1 - elapsed / durationMs)
+    toastProgress.value = Math.round(left * 100)
+    if (left > 0) {
+      toastRaf = requestAnimationFrame(tick)
+    }
+  }
+  toastRaf = requestAnimationFrame(tick)
+
+  toastTimeout = window.setTimeout(() => {
+    toastVisible.value = false
+    clearToastTimers()
+  }, durationMs)
+}
+
+function closeToast() {
+  toastVisible.value = false
+  clearToastTimers()
+}
+
+/* ---- Lists ---- */
+const myAds = computed(() =>
+  ads.value.filter(a => (a.ownerEmail || "").trim().toLowerCase() === myEmail.value)
+)
+const otherAds = computed(() =>
+  ads.value.filter(a => (a.ownerEmail || "").trim().toLowerCase() !== myEmail.value)
+)
 
 function getImageSrc(ad: Ad) {
   const p = (ad.imagePath || "").trim()
   if (!p) return KeinBild
-
   if (p.startsWith("http://") || p.startsWith("https://")) return p
-
   const path = p.startsWith("/") ? p : `/${p}`
   return `${backendBaseUrl}${path}`
 }
-
-/* ---------- extra Einblendung statt alert ---------- */
-const infoBox = ref<{ text: string; secondsLeft: number } | null>(null)
-let infoTimer: number | null = null
-
-function showInfoBox(text: string, duration = 7) {
-  if (infoTimer) {
-    clearInterval(infoTimer)
-    infoTimer = null
-  }
-
-  infoBox.value = { text, secondsLeft: duration }
-
-  infoTimer = window.setInterval(() => {
-    if (!infoBox.value) return
-    infoBox.value.secondsLeft--
-
-    if (infoBox.value.secondsLeft <= 0) {
-      clearInterval(infoTimer!)
-      infoTimer = null
-      infoBox.value = null
-    }
-  }, 1000)
-}
-
-function hideInfoBox() {
-  if (infoTimer) {
-    clearInterval(infoTimer)
-    infoTimer = null
-  }
-  infoBox.value = null
-}
-/* -------------------------------------------------- */
 
 async function loadAds() {
   errorMessage.value = ""
@@ -91,7 +120,7 @@ async function loadAds() {
   try {
     const res = await fetch(`${backendBaseUrl}/api/ads`, {
       method: "GET",
-      headers: { "Accept": "application/json" }
+      headers: { Accept: "application/json" }
     })
 
     if (!res.ok) {
@@ -197,7 +226,7 @@ async function saveEdit() {
 
     closeEdit()
     await loadAds()
-    showInfoBox("Änderungen gespeichert.")
+    showToast("Anzeige gespeichert.", "success")
   } catch {
     editError.value = "Server nicht erreichbar."
   } finally {
@@ -227,17 +256,29 @@ async function deleteAd(ad: Ad) {
     if (!res.ok && res.status !== 204) {
       const msg = await res.text()
       errorMessage.value = msg || "Löschen fehlgeschlagen."
+      showToast(errorMessage.value, "error")
       return
     }
 
     await loadAds()
-    showInfoBox("Anzeige wurde gelöscht.")
+    showToast("Anzeige gelöscht.", "success")
   } catch {
     errorMessage.value = "Server nicht erreichbar."
+    showToast(errorMessage.value, "error")
   }
 }
 
 function buy(ad: Ad) {
+  if (ad.sold) {
+    showToast("Diese Anzeige ist bereits verkauft.", "info")
+    return
+  }
+
+  if (isInCart(ad.id)) {
+    showToast("Ist schon im Warenkorb.", "info")
+    return
+  }
+
   addToCart({
     id: ad.id,
     brand: ad.brand,
@@ -246,7 +287,8 @@ function buy(ad: Ad) {
     ownerEmail: ad.ownerEmail,
     imagePath: ad.imagePath ?? null
   })
-  showInfoBox("In den Warenkorb gelegt.")
+
+  showToast("In den Warenkorb gelegt.", "success")
 }
 
 function closeMenu() {
@@ -260,7 +302,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("click", closeMenu)
-  hideInfoBox()
+  clearToastTimers()
 })
 </script>
 
@@ -282,12 +324,6 @@ onBeforeUnmount(() => {
           <RouterLink :to="{ name: 'create-ad' }" class="primary-button">Anzeige erstellen</RouterLink>
         </div>
       </header>
-
-      <!-- extra Einblendung (kein Toast, Teil der Seite) -->
-      <div v-if="infoBox" class="info-box">
-        <span>{{ infoBox.text }}</span>
-        <span class="countdown">{{ infoBox.secondsLeft }}s</span>
-      </div>
 
       <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
       <p v-else-if="ads.length === 0" class="empty-text">Es wurden noch keine Anzeigen erstellt.</p>
@@ -339,7 +375,17 @@ onBeforeUnmount(() => {
               </div>
 
               <div class="bottom-row">
-                <button class="primary-button full" type="button" @click="buy(ad)">Kaufen</button>
+                <button
+                  class="primary-button full"
+                  type="button"
+                  @click="buy(ad)"
+                  :disabled="ad.sold || isInCart(ad.id)"
+                  :class="{ disabled: ad.sold || isInCart(ad.id) }"
+                >
+                  <template v-if="ad.sold">Verkauft</template>
+                  <template v-else-if="isInCart(ad.id)">Im Warenkorb</template>
+                  <template v-else>Kaufen</template>
+                </button>
               </div>
             </article>
           </div>
@@ -389,6 +435,21 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+    <!-- Toast bottom-right (outside the white box) -->
+    <teleport to="body">
+      <div class="toast-host" aria-live="polite">
+        <div v-if="toastVisible" class="toast" :class="toastKind">
+          <div class="toast-top">
+            <div class="toast-text">{{ toastMessage }}</div>
+            <button class="toast-x" type="button" @click="closeToast" aria-label="Schließen">×</button>
+          </div>
+          <div class="toast-bar">
+            <div class="toast-bar-fill" :style="{ width: toastProgress + '%' }"></div>
+          </div>
+        </div>
+      </div>
+    </teleport>
+
   </div>
 </template>
 
@@ -400,6 +461,7 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   background: linear-gradient(135deg, #4f46e5, #7c3aed, #ec4899);
   display: block;
+  position: relative;
 }
 
 .ads-inner {
@@ -410,25 +472,6 @@ onBeforeUnmount(() => {
   padding: 32px 40px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
   margin: 0 auto;
-}
-
-/* extra Einblendung statt alert */
-.info-box {
-  margin: 14px 0 18px;
-  padding: 14px 18px;
-  border-radius: 14px;
-  background: #ecfeff;
-  color: #0f172a;
-  font-weight: 750;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border: 2px solid #67e8f9;
-}
-.countdown {
-  font-size: 13px;
-  font-weight: 850;
-  color: #0369a1;
 }
 
 .ads-header {
@@ -478,6 +521,14 @@ onBeforeUnmount(() => {
   width: 100%;
 }
 
+.primary-button.disabled,
+.primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+  background: #9ca3af;
+}
+
 .ghost-button {
   padding: 12px 14px;
   border-radius: 14px;
@@ -496,7 +547,6 @@ onBeforeUnmount(() => {
   background: #ffffff;
   color: #111827;
   font-weight: 800;
-  font-size: 14px;
   font-size: 14px;
   text-decoration: none;
 }
@@ -714,5 +764,73 @@ onBeforeUnmount(() => {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 4px;
+}
+
+.toast-host {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 999999;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  width: 320px;
+  border-radius: 18px;
+  background: rgba(17, 24, 39, 0.92);
+  color: #ffffff;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.toast.success {
+  border-color: rgba(79, 70, 229, 0.55);
+}
+
+.toast.info {
+  border-color: rgba(124, 58, 237, 0.55);
+}
+
+.toast.error {
+  border-color: rgba(236, 72, 153, 0.55);
+}
+
+.toast-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 14px 10px;
+}
+
+.toast-text {
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.toast-x {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.toast-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.toast-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed, #ec4899);
 }
 </style>
