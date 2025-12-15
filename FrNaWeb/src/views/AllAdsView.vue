@@ -19,7 +19,7 @@ const errorMessage = ref("")
 const isLoading = ref(false)
 
 const backendBaseUrl = (import.meta.env.VITE_BACKEND_BASE_URL || "").replace(/\/+$/, "")
-const myEmail = computed(() => (getUserEmail() || "").toLowerCase())
+const myEmail = computed(() => (getUserEmail() || "").trim().toLowerCase())
 
 const openMenuId = ref<number | null>(null)
 
@@ -39,8 +39,8 @@ function onEditImageChange(e: Event) {
   editImageFile.value = input?.files?.[0] ?? null
 }
 
-const myAds = computed(() => ads.value.filter(a => (a.ownerEmail || "").toLowerCase() === myEmail.value))
-const otherAds = computed(() => ads.value.filter(a => (a.ownerEmail || "").toLowerCase() !== myEmail.value))
+const myAds = computed(() => ads.value.filter(a => (a.ownerEmail || "").trim().toLowerCase() === myEmail.value))
+const otherAds = computed(() => ads.value.filter(a => (a.ownerEmail || "").trim().toLowerCase() !== myEmail.value))
 
 function getImageSrc(ad: Ad) {
   const p = (ad.imagePath || "").trim()
@@ -223,12 +223,20 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+
   <p style="color:#111; font-weight:800;">
     DEBUG adsCount: {{ ads.length }}
   </p>
   <pre style="color:#111; background:#fff; padding:12px; border-radius:12px; overflow:auto;">
 {{ ads }}
 </pre>
+  <p style="color:#111; font-weight:800;">
+    DEBUG myEmail: "{{ myEmail }}"
+    myAds: {{ myAds.length }}
+    otherAds: {{ otherAds.length }}
+  </p>
+
+
 
   <div class="ads-page">
     <div class="ads-inner">
