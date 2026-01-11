@@ -135,7 +135,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* FIX: Topbar bleibt oben sichtbar */
 .topbar {
   position: sticky;
   top: 0;
@@ -145,7 +144,7 @@ onBeforeUnmount(() => {
   box-shadow: 0 2px 0 #000;
 }
 
-/* Layout breit */
+
 .topbar-inner {
   max-width: 1100px;
   margin: 0 auto;
@@ -191,8 +190,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap; /* wichtig für schmale Fenster */
-  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .nav-link {
@@ -240,7 +238,6 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-/* Popup */
 .popup {
   position: absolute;
   right: 0;
@@ -250,7 +247,7 @@ onBeforeUnmount(() => {
   border-radius: 14px;
   padding: 12px;
   width: 320px;
-  max-width: min(320px, calc(100vw - 24px)); /* mobile safe */
+  max-width: min(320px, calc(100vw - 24px));
   box-shadow: 0 16px 40px rgba(0,0,0,0.14);
   z-index: 9999;
 }
@@ -321,7 +318,6 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-/* RESPONSIVE: schmal/Handy */
 @media (max-width: 820px) {
   .topbar-inner {
     padding: 12px 14px;
