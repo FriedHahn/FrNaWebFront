@@ -5,7 +5,7 @@ import { getAuthToken } from "@/stores/auth"
 
 const brand = ref("")
 const size = ref<number | null>(null)
-const price = ref<number | null>(null)
+const price = ref<string>("")
 
 const imageFile = ref<File | null>(null)
 
@@ -20,10 +20,18 @@ function onImageChange(e: Event) {
   imageFile.value = input?.files?.[0] ?? null
 }
 
+function normalizedPrice() {
+  return price.value.replace(",", ".").trim()
+}
+
 function isValid() {
   if (!brand.value.trim()) return false
   if (size.value === null || Number.isNaN(size.value) || size.value <= 0) return false
-  if (price.value === null || Number.isNaN(price.value) || price.value < 0) return false
+
+  const p = normalizedPrice()
+  if (!p) return false
+  if (isNaN(Number(p)) || Number(p) < 0) return false
+
   return true
 }
 
@@ -52,7 +60,7 @@ async function addItem() {
       body: JSON.stringify({
         brand: brand.value,
         size: String(size.value),
-        price: String(price.value)
+        price: normalizedPrice()
       })
     })
 
@@ -83,7 +91,7 @@ async function addItem() {
     }
 
     router.push({ name: "ads" })
-  } catch (e) {
+  } catch {
     errorMessage.value = "Server nicht erreichbar."
   } finally {
     isSaving.value = false
@@ -105,12 +113,26 @@ async function addItem() {
 
         <label class="label">
           Größe
-          <input v-model.number="size" class="input" type="number" inputmode="numeric" min="1" step="1" placeholder="z.B. 42" />
+          <input
+            v-model.number="size"
+            class="input"
+            type="number"
+            inputmode="numeric"
+            min="1"
+            step="1"
+            placeholder="z.B. 42"
+          />
         </label>
 
         <label class="label">
           Preis
-          <input v-model.number="price" class="input" type="number" inputmode="decimal" min="0" step="0.01" placeholder="z.B. 99.95" />
+          <input
+            v-model="price"
+            class="input"
+            type="text"
+            inputmode="decimal"
+            placeholder="z.B. 12.50 oder 12,50"
+          />
         </label>
 
         <label class="label">

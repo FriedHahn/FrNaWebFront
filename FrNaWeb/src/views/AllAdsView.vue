@@ -30,6 +30,7 @@ const toastVisible = ref(false)
 const toastMessage = ref("")
 const toastKind = ref<ToastKind>("success")
 const toastProgress = ref(100)
+const toastSecondsLeft = ref(0)
 
 let toastRaf: number | null = null
 let toastTimeout: number | null = null
@@ -45,20 +46,27 @@ function clearToastTimers() {
   }
 }
 
-function showToast(msg: string, kind: ToastKind = "success", durationMs = 6500) {
+function showToast(msg: string, kind: ToastKind = "success", durationMs = 2600) {
   clearToastTimers()
 
   toastMessage.value = msg
   toastKind.value = kind
   toastVisible.value = true
   toastProgress.value = 100
+  toastSecondsLeft.value = durationMs / 1000
 
   const start = performance.now()
   const tick = (now: number) => {
     const elapsed = now - start
-    const left = Math.max(0, 1 - elapsed / durationMs)
-    toastProgress.value = Math.round(left * 100)
-    if (left > 0) toastRaf = requestAnimationFrame(tick)
+    const leftMs = Math.max(0, durationMs - elapsed)
+    const leftRatio = Math.max(0, 1 - elapsed / durationMs)
+
+    toastProgress.value = Math.round(leftRatio * 100)
+    toastSecondsLeft.value = leftMs / 1000
+
+    if (leftMs > 0) {
+      toastRaf = requestAnimationFrame(tick)
+    }
   }
   toastRaf = requestAnimationFrame(tick)
 
@@ -125,7 +133,7 @@ const isEditOpen = ref(false)
 const editId = ref<number | null>(null)
 const editBrand = ref("")
 const editSize = ref<number | null>(null)
-const editPrice = ref<number | null>(null)
+const editPrice = ref("")
 const editError = ref("")
 const isSavingEdit = ref(false)
 
@@ -139,7 +147,6 @@ function onEditImageChange(e: Event) {
 
 const myAds = computed(() => ads.value.filter(a => (a.ownerEmail || "").trim().toLowerCase() === myEmail.value))
 const otherAds = computed(() => ads.value.filter(a => (a.ownerEmail || "").trim().toLowerCase() !== myEmail.value))
-
 
 const cartIds = computed(() => new Set(getCartItems().map(i => i.id)))
 function isInCart(adId: number) {
@@ -195,7 +202,7 @@ function openEdit(ad: Ad) {
   editId.value = ad.id
   editBrand.value = ad.brand ?? ""
   editSize.value = Number(ad.size)
-  editPrice.value = Number(ad.price)
+  editPrice.value = String(ad.price ?? "")
 
   editRemoveImage.value = false
   editImageFile.value = null
@@ -210,7 +217,8 @@ function closeEdit() {
 function isEditValid() {
   if (!editBrand.value.trim()) return false
   if (editSize.value === null || Number.isNaN(editSize.value) || editSize.value <= 0) return false
-  if (editPrice.value === null || Number.isNaN(editPrice.value) || editPrice.value < 0) return false
+  const p = editPrice.value.replace(",", ".")
+  if (!p || isNaN(Number(p)) || Number(p) < 0) return false
   return true
 }
 
@@ -238,7 +246,7 @@ async function saveEdit() {
       body: JSON.stringify({
         brand: editBrand.value,
         size: String(editSize.value),
-        price: String(editPrice.value)
+        price: editPrice.value.replace(",", ".")
       })
     })
 
@@ -418,7 +426,13 @@ onBeforeUnmount(() => {
 
           <label class="label">
             Preis
-            <input v-model.number="editPrice" class="input" type="number" inputmode="decimal" min="0" step="0.01" />
+            <input
+              v-model="editPrice"
+              class="input"
+              type="text"
+              inputmode="decimal"
+              placeholder="z.B. 12.50 oder 12,50"
+            />
           </label>
 
           <label class="label checkbox">
@@ -446,7 +460,10 @@ onBeforeUnmount(() => {
     <div v-if="isDeleteOpen" class="confirm-backdrop" @click="closeDelete">
       <div class="confirm-modal" @click.stop>
         <h2 class="confirm-title">Anzeige löschen?</h2>
-        <p class="confirm-text">Möchtest du diese Anzeige wirklich löschen?<br>Dies kann nicht mehr rückgängig gemacht werden.</p>
+        <p class="confirm-text">
+          Möchtest du diese Anzeige wirklich löschen?<br />
+          Dies kann nicht mehr rückgängig gemacht werden.
+        </p>
 
         <div class="confirm-actions">
           <button class="ghost-button" type="button" @click="closeDelete" :disabled="isDeleting">Abbrechen</button>
@@ -459,9 +476,11 @@ onBeforeUnmount(() => {
 
     <teleport to="body">
       <div class="toast-host" aria-live="polite" aria-atomic="true">
-        <div v-if="toastVisible" class="toast" :class="toastKind">
+        <div v-if="toastVisible" class="app-toast" :class="toastKind">
           <div class="toast-top">
-            <div class="toast-text">{{ toastMessage }}</div>
+            <div class="toast-text">
+              {{ toastMessage }}
+            </div>
             <button class="toast-x" type="button" @click="closeToast" aria-label="Schließen">×</button>
           </div>
           <div class="toast-bar">
@@ -842,31 +861,20 @@ onBeforeUnmount(() => {
   position: fixed;
   right: 18px;
   bottom: 18px;
-  z-index: 999999;
+  z-index: 9999;
   pointer-events: none;
 }
 
-.toast {
-  pointer-events: auto;
-  width: 320px;
-  background: #ffffff;
+.app-toast {
+  width: 340px;
+  max-width: calc(100vw - 36px);
+  background: rgba(255, 255, 255, 0.96);
   color: #111827;
+  border: 1px solid rgba(17, 24, 39, 0.10);
   border-radius: 18px;
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.25);
   overflow: hidden;
-  border: 1px solid rgba(17, 24, 39, 0.10);
-}
-
-.toast.success {
-  border-color: rgba(79, 70, 229, 0.35);
-}
-
-.toast.info {
-  border-color: rgba(124, 58, 237, 0.35);
-}
-
-.toast.error {
-  border-color: rgba(220, 38, 38, 0.35);
+  pointer-events: auto;
 }
 
 .toast-top {
@@ -874,36 +882,54 @@ onBeforeUnmount(() => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 12px 10px;
+  padding: 12px 14px 10px 14px;
 }
 
 .toast-text {
-  font-weight: 850;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.35;
+  font-weight: 750;
   color: #111827;
+  word-break: break-word;
 }
 
 .toast-x {
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
-  border: 1px solid rgba(17, 24, 39, 0.10);
-  background: rgba(17, 24, 39, 0.04);
-  color: #111827;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  background: rgba(255, 255, 255, 0.6);
   cursor: pointer;
-  font-weight: 900;
+  font-size: 20px;
   line-height: 1;
+  color: #111827;
+}
+
+.toast-x:hover {
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .toast-bar {
-  height: 4px;
-  background: rgba(17, 24, 39, 0.08);
+  height: 8px;
+  background: rgba(17, 24, 39, 0.12);
 }
 
 .toast-bar-fill {
   height: 100%;
   width: 100%;
-  background: linear-gradient(90deg, #4f46e5, #7c3aed, #ec4899);
+  background: #7c3aed;
+  transition: width 0.06s linear;
+}
+
+.app-toast.success .toast-bar-fill {
+  background: #7c3aed;
+}
+
+.app-toast.info .toast-bar-fill {
+  background: rgba(59, 130, 246, 0.95);
+}
+
+.app-toast.error .toast-bar-fill {
+  background: rgba(239, 68, 68, 0.95);
 }
 </style>
