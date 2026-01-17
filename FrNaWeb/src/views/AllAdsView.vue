@@ -10,6 +10,8 @@ const ads = ref<Ad[]>([])
 const errorMessage = ref("")
 const isLoading = ref(false)
 
+const imageBuster = ref(0)
+
 const myEmail = computed(() => (getUserEmail() || "").trim().toLowerCase())
 
 const openMenuId = ref<number | null>(null)
@@ -128,7 +130,10 @@ function isInCart(adId: number) {
 
 function getImageSrc(ad: Ad) {
   const url = buildImageUrl(ad.imagePath)
-  return url || KeinBild
+  if (!url) return KeinBild
+
+  const sep = url.includes("?") ? "&" : "?"
+  return `${url}${sep}v=${imageBuster.value}`
 }
 
 async function loadAds() {
@@ -136,6 +141,7 @@ async function loadAds() {
   isLoading.value = true
   try {
     ads.value = await listAds()
+    imageBuster.value++
   } catch (e) {
     errorMessage.value = e instanceof Error ? e.message : "Server nicht erreichbar."
   } finally {
@@ -194,16 +200,25 @@ async function saveEdit() {
       price: editPrice.value.replace(",", ".")
     })
 
+    let imageChanged = false
+
     if (editRemoveImage.value) {
       await deleteAdImage(editId.value)
+      imageChanged = true
     }
 
     if (editImageFile.value) {
       await uploadAdImage(editId.value, editImageFile.value)
+      imageChanged = true
     }
 
     closeEdit()
     await loadAds()
+
+    if (imageChanged) {
+      imageBuster.value++
+    }
+
     showToast("Anzeige gespeichert.", "success")
   } catch (e) {
     editError.value = e instanceof Error ? e.message : "Server nicht erreichbar."
