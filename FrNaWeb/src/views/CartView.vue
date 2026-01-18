@@ -60,7 +60,7 @@ async function checkout() {
         <article v-for="it in items" :key="it.id" class="card">
           <div class="card-row">
             <div class="img-box">
-              <img :src="getImageSrc(it.imagePath)" class="img" alt="Anzeigenbild" />
+              <img :src="getImageSrc(it.imagePath)" class="img" alt="Anzeigenbild" @error="(e) => ((e.target as HTMLImageElement).src = KeinBild)" />
             </div>
 
             <div class="info">

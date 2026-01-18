@@ -24,7 +24,6 @@ const toastSecondsLeft = ref(0)
 let toastRaf: number | null = null
 let toastTimeout: number | null = null
 
-// Cache-Buster fuer Bilder (damit <img> wirklich neu laedt, auch wenn Browser cached)
 const imageBuster = ref(0)
 
 function bumpImageBuster() {
