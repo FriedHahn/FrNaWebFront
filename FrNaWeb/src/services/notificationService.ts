@@ -1,4 +1,5 @@
 import { getBackendBaseUrl, authHeaders } from "@/services/apiClient"
+import { apiFetch } from "@/services/http"
 
 export type NotificationItem = {
   id: number
@@ -6,7 +7,7 @@ export type NotificationItem = {
 }
 
 export async function fetchUnreadNotifications(): Promise<NotificationItem[]> {
-  const res = await fetch(`${getBackendBaseUrl()}/api/notifications`, {
+  const res = await apiFetch(`${getBackendBaseUrl()}/api/notifications`, {
     headers: authHeaders()
   })
 
@@ -17,7 +18,7 @@ export async function fetchUnreadNotifications(): Promise<NotificationItem[]> {
 }
 
 export async function markNotificationRead(id: number): Promise<void> {
-  await fetch(`${getBackendBaseUrl()}/api/notifications/${id}/read`, {
+  await apiFetch(`${getBackendBaseUrl()}/api/notifications/${id}/read`, {
     method: "POST",
     headers: authHeaders()
   })

@@ -1,7 +1,8 @@
 import { getBackendBaseUrl, authHeaders } from "@/services/apiClient"
+import { apiFetch } from "@/services/http"
 
 export async function fetchProfile() {
-  const res = await fetch(`${getBackendBaseUrl()}/api/profile`, {
+  const res = await apiFetch(`${getBackendBaseUrl()}/api/profile`, {
     method: "GET",
     headers: authHeaders()
   })

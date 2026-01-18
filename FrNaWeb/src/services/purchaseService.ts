@@ -1,7 +1,8 @@
 import { getBackendBaseUrl, authHeaders, jsonHeaders } from "@/services/apiClient"
+import { apiFetch } from "@/services/http"
 
 export async function checkoutPurchase(adIds: number[]): Promise<void> {
-  const res = await fetch(`${getBackendBaseUrl()}/api/purchases/checkout`, {
+  const res = await apiFetch(`${getBackendBaseUrl()}/api/purchases/checkout`, {
     method: "POST",
     headers: {
       ...jsonHeaders(),

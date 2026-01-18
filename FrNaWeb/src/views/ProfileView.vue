@@ -117,7 +117,7 @@ onMounted(loadProfile)
 
         <div v-else class="list">
           <article v-for="a in soldAds" :key="a.id" class="item">
-            <img :src="getImageSrc(a.imagePath)" class="img" alt="Bild" />
+            <img :src="getImageSrc(a.imagePath)" class="img" alt="Bild" @error="(e) => ((e.target as HTMLImageElement).src = KeinBild)" />
             <div class="meta">
               <p class="title">{{ a.brand }}</p>
               <p class="small">Größe {{ a.size }} · {{ a.price }} €</p>
@@ -132,7 +132,7 @@ onMounted(loadProfile)
 
         <div v-else class="list">
           <article v-for="a in boughtAds" :key="a.id" class="item">
-            <img :src="getImageSrc(a.imagePath)" class="img" alt="Bild" />
+            <img :src="getImageSrc(a.imagePath)" class="img" alt="Bild" @error="(e) => ((e.target as HTMLImageElement).src = KeinBild)" />
             <div class="meta">
               <p class="title">{{ a.brand }}</p>
               <p class="small">Größe {{ a.size }} · {{ a.price }} €</p>

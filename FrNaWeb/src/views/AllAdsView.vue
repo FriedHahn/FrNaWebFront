@@ -24,6 +24,13 @@ const toastSecondsLeft = ref(0)
 let toastRaf: number | null = null
 let toastTimeout: number | null = null
 
+// Cache-Buster fuer Bilder (damit <img> wirklich neu laedt, auch wenn Browser cached)
+const imageBuster = ref(0)
+
+function bumpImageBuster() {
+  imageBuster.value += 1
+}
+
 function clearToastTimers() {
   if (toastRaf !== null) {
     cancelAnimationFrame(toastRaf)
@@ -118,6 +125,12 @@ function onEditImageChange(e: Event) {
   editImageFile.value = input?.files?.[0] ?? null
 }
 
+// ersetzt ein Ad im Array, damit Vue garantiert neu rendert
+function replaceAd(updated: Ad) {
+  const idx = ads.value.findIndex(a => a.id === updated.id)
+  if (idx !== -1) ads.value.splice(idx, 1, updated)
+}
+
 const myAds = computed(() => ads.value.filter(a => (a.ownerEmail || "").trim().toLowerCase() === myEmail.value))
 const otherAds = computed(() => ads.value.filter(a => (a.ownerEmail || "").trim().toLowerCase() !== myEmail.value))
 
@@ -128,7 +141,9 @@ function isInCart(adId: number) {
 
 function getImageSrc(ad: Ad) {
   const url = buildImageUrl(ad.imagePath)
-  return url || KeinBild
+  const base = url || KeinBild
+  // wichtig: cache-buster, damit nach delete+upload in einer session das neue bild sofort kommt
+  return base ? `${base}${base.includes("?") ? "&" : "?"}v=${imageBuster.value}` : base
 }
 
 async function loadAds() {
@@ -136,6 +151,7 @@ async function loadAds() {
   isLoading.value = true
   try {
     ads.value = await listAds()
+    bumpImageBuster()
   } catch (e) {
     errorMessage.value = e instanceof Error ? e.message : "Server nicht erreichbar."
   } finally {
@@ -194,16 +210,21 @@ async function saveEdit() {
       price: editPrice.value.replace(",", ".")
     })
 
+    // Wenn Bild entfernt wird, aktualisiere das Ad-Objekt direkt
     if (editRemoveImage.value) {
-      await deleteAdImage(editId.value)
+      const updated = await deleteAdImage(editId.value)
+      replaceAd(updated)
+      bumpImageBuster()
     }
 
+    // Wenn neues Bild hochgeladen wird, aktualisiere das Ad-Objekt direkt
     if (editImageFile.value) {
-      await uploadAdImage(editId.value, editImageFile.value)
+      const updated = await uploadAdImage(editId.value, editImageFile.value)
+      replaceAd(updated)
+      bumpImageBuster()
     }
 
     closeEdit()
-    await loadAds()
     showToast("Anzeige gespeichert.", "success")
   } catch (e) {
     editError.value = e instanceof Error ? e.message : "Server nicht erreichbar."
@@ -280,7 +301,7 @@ onBeforeUnmount(() => {
           <div v-else class="ads-grid">
             <article v-for="ad in myAds" :key="ad.id" class="ad-card">
               <div class="img-frame">
-                <img :src="getImageSrc(ad)" class="ad-image" alt="Anzeigenbild" />
+                <img :src="getImageSrc(ad)" class="ad-image" alt="Anzeigenbild" @error="(e) => ((e.target as HTMLImageElement).src = KeinBild)" />
               </div>
 
               <div class="content">
@@ -308,7 +329,7 @@ onBeforeUnmount(() => {
           <div v-else class="ads-grid">
             <article v-for="ad in otherAds" :key="ad.id" class="ad-card">
               <div class="img-frame">
-                <img :src="getImageSrc(ad)" class="ad-image" alt="Anzeigenbild" />
+                <img :src="getImageSrc(ad)" class="ad-image" alt="Anzeigenbild" @error="(e) => ((e.target as HTMLImageElement).src = KeinBild)" />
               </div>
 
               <div class="content">

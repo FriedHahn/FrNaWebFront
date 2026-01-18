@@ -1,4 +1,5 @@
 import { getBackendBaseUrl, authHeaders, jsonHeaders } from "@/services/apiClient"
+import { apiFetch } from "@/services/http"
 
 export type Ad = {
   id: number
@@ -24,7 +25,7 @@ export type UpdateAdPayload = {
 }
 
 export async function listAds(): Promise<Ad[]> {
-  const res = await fetch(`${getBackendBaseUrl()}/api/ads`, {
+  const res = await apiFetch(`${getBackendBaseUrl()}/api/ads`, {
     method: "GET",
     headers: { Accept: "application/json" }
   })
@@ -34,11 +35,11 @@ export async function listAds(): Promise<Ad[]> {
   }
 
   const data = await res.json()
-  return Array.isArray(data) ? data : (data ? [data] : [])
+  return Array.isArray(data) ? data : data ? [data] : []
 }
 
 export async function createAd(payload: CreateAdPayload): Promise<Ad> {
-  const res = await fetch(`${getBackendBaseUrl()}/api/ads`, {
+  const res = await apiFetch(`${getBackendBaseUrl()}/api/ads`, {
     method: "POST",
     headers: {
       ...jsonHeaders(),
@@ -56,7 +57,7 @@ export async function createAd(payload: CreateAdPayload): Promise<Ad> {
 }
 
 export async function updateAd(adId: number, payload: UpdateAdPayload): Promise<void> {
-  const res = await fetch(`${getBackendBaseUrl()}/api/ads/${adId}`, {
+  const res = await apiFetch(`${getBackendBaseUrl()}/api/ads/${adId}`, {
     method: "PUT",
     headers: {
       ...jsonHeaders(),
@@ -72,7 +73,7 @@ export async function updateAd(adId: number, payload: UpdateAdPayload): Promise<
 }
 
 export async function deleteAd(adId: number): Promise<void> {
-  const res = await fetch(`${getBackendBaseUrl()}/api/ads/${adId}`, {
+  const res = await apiFetch(`${getBackendBaseUrl()}/api/ads/${adId}`, {
     method: "DELETE",
     headers: authHeaders()
   })
@@ -83,11 +84,11 @@ export async function deleteAd(adId: number): Promise<void> {
   }
 }
 
-export async function uploadAdImage(adId: number, file: File): Promise<void> {
+export async function uploadAdImage(adId: number, file: File): Promise<Ad> {
   const formData = new FormData()
   formData.append("file", file)
 
-  const res = await fetch(`${getBackendBaseUrl()}/api/ads/${adId}/image`, {
+  const res = await apiFetch(`${getBackendBaseUrl()}/api/ads/${adId}/image`, {
     method: "POST",
     headers: authHeaders(),
     body: formData
@@ -97,18 +98,22 @@ export async function uploadAdImage(adId: number, file: File): Promise<void> {
     const msg = await res.text().catch(() => "")
     throw new Error(msg || "Bild Upload fehlgeschlagen.")
   }
+
+  return await res.json()
 }
 
-export async function deleteAdImage(adId: number): Promise<void> {
-  const res = await fetch(`${getBackendBaseUrl()}/api/ads/${adId}/image`, {
+export async function deleteAdImage(adId: number): Promise<Ad> {
+  const res = await apiFetch(`${getBackendBaseUrl()}/api/ads/${adId}/image`, {
     method: "DELETE",
     headers: authHeaders()
   })
 
-  if (!res.ok && res.status !== 204) {
+  if (!res.ok) {
     const msg = await res.text().catch(() => "")
-    throw new Error(msg || "Bild löschen fehlgeschlagen.")
+    throw new Error(msg || "Bild loeschen fehlgeschlagen.")
   }
+
+  return await res.json()
 }
 
 export function buildImageUrl(imagePath: string | null | undefined): string {
@@ -116,11 +121,9 @@ export function buildImageUrl(imagePath: string | null | undefined): string {
   if (!p) return ""
 
   if (p.startsWith("http://") || p.startsWith("https://")) return p
-
   if (p.startsWith("//")) return `https:${p}`
 
   const base = getBackendBaseUrl()
   const path = p.startsWith("/") ? p : `/${p}`
   return `${base}${path}`
 }
-
