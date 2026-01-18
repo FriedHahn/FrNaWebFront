@@ -1,4 +1,6 @@
 # ShoeLive
+Friedrich Hahn 594124  
+Nam Le 597511
 
 ShoeLive ist ein kleiner Marktplatz für Schuhe. Nutzer können Anzeigen erstellen, Bilder hochladen, Anzeigen bearbeiten oder löschen, Artikel in den Warenkorb legen und kaufen. Verkäufer bekommen Benachrichtigungen über Verkäufe. Im Profil sieht man Käufe, Verkäufe sowie Summen.
 
